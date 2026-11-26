@@ -11,27 +11,22 @@ namespace CK.Setup;
 /// client feature of a TypeScript framework (its <see cref="FeatureName"/>: "NgApp" for an Angular application): such a
 /// client is a <see cref="TypeScriptBinPathAspectConfiguration"/> of its App, named after the client.
 /// <list type="bullet">
-///   <item>The keys of the framework section (<see cref="TypeScriptBinPathAspectConfiguration.ClientConfigurationKeys"/>)
-///   configure it. The "Types" and "ExcludedTypes" of the client are its type set: the TypeScript engine reads the
-///   computed set (its TypeScript packages, the Pocos it lists); only the entries that configure the TypeScript of a type
-///   (an object with other keys than its "Name") are given to the aspect.</item>
-///   <item>Its "Hosting" section (the client served by its party) gives its <see cref="TypeScriptBinPathAspectConfiguration.RequestPath"/>
-///   (optional: "/{kebab-name}" by default, "/" for the default client) and its <see cref="TypeScriptBinPathAspectConfiguration.DevServerPort"/>.
-///   A client without "Hosting" is not supported yet.</item>
-///   <item>These keys are compile time keys: they are not projected in the host's "appsettings.json". The other keys of
-///   "Hosting" are the run time's. The framework section and "Hosting" stay declared in the projection (written
-///   <c>true</c> when all their keys are compile time keys, see <see cref="AppConfiguration.AddDeclarationKey(string)"/>).</item>
+///   <item>The feature declares its compile time model: <c>[CompileConfiguration&lt;TModel&gt;]</c> where the model is
+///   (or derives from) <see cref="TypeScriptClientCompileConfiguration"/>. The App builder reads it (its keys are compile
+///   time keys: they are not projected in the host's "appsettings.json"), this contributor receives it
+///   (<see cref="AppIdentityAppBuilderContributor.DeclaredClient.GetCompileModel{TModel}(string)"/>) and never reads the
+///   section.</item>
+///   <item>The "Types" and "ExcludedTypes" of the client are its type set: the TypeScript engine reads the computed set
+///   (its TypeScript packages, the Pocos it lists). The TypeScript settings of its types are the
+///   <see cref="TypeScriptClientCompileConfiguration.Types"/> of the model.</item>
+///   <item>The <see cref="TypeScriptClientCompileConfiguration.RequestPath"/> ("/{kebab-name}" by default) is unique among
+///   the clients of an App.</item>
 ///   <item>The presence of a client gives the <see cref="TypeScriptAspectConfiguration"/>.</item>
 /// </list>
 /// A package that brings a TypeScript framework specializes it and registers it with <see cref="AppBuilderContributorAttribute"/>.
 /// </summary>
 public abstract class TypeScriptFrameworkAppBuilderContributor : IAppBuilderContributor
 {
-    /// <summary>
-    /// The name of the client feature that serves a client: "Hosting".
-    /// </summary>
-    public const string HostingFeatureName = "Hosting";
-
     readonly AppIdentityAppBuilderContributor _appIdentity;
 
     /// <summary>
@@ -55,7 +50,9 @@ public abstract class TypeScriptFrameworkAppBuilderContributor : IAppBuilderCont
     public bool Contribute( IActivityMonitor monitor, AppBuilderContext context )
     {
         bool success = true;
-        foreach( var app in _appIdentity.Clients.Where( c => c.Features.ContainsKey( FeatureName ) ).GroupBy( c => c.App ) )
+        // A feature turned off ("NgApp": false) is not there.
+        foreach( var app in _appIdentity.Clients.Where( c => c.Features.TryGetValue( FeatureName, out var f ) && !string.Equals( f.Value, "false", StringComparison.OrdinalIgnoreCase ) )
+                                                .GroupBy( c => c.App ) )
         {
             var multiple = new XElement( EngineConfiguration.xMultiple );
             var requestPaths = new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase );
@@ -94,77 +91,56 @@ public abstract class TypeScriptFrameworkAppBuilderContributor : IAppBuilderCont
     /// <inheritdoc />
     public bool OnContributed( IActivityMonitor monitor, AppBuilderContext context ) => true;
 
-    // The XML that a "CKSetup.xml" gives to the aspect: the scalar keys are attributes, "Types", "ExcludedTypes" and
-    // "Barrels" are lists. Adds the compile time keys to the App.
+    // The XML that a "CKSetup.xml" gives to the aspect, from the compile time model of the client's feature.
     XElement? ToXml( IActivityMonitor monitor, AppIdentityAppBuilderContributor.DeclaredClient c, Dictionary<string, string> requestPaths )
     {
+        var m = c.GetCompileModel<TypeScriptClientCompileConfiguration>( FeatureName );
+        if( m == null )
+        {
+            // An invalid declaration ("NgApp": "yes") has been reported by the AppIdentity contributor.
+            if( c.Features[FeatureName].Value != null ) return null;
+            monitor.Error( $"The client feature '{FeatureName}' of the {c} has no compile time model: it must declare [CompileConfiguration<TModel>] where the model is (or derives from) '{nameof( TypeScriptClientCompileConfiguration )}'." );
+            return null;
+        }
         var x = new XElement( "TypeScript", new XAttribute( "Name", c.Name ) );
-        var framework = c.Features[FeatureName];
+        Add( "TargetProjectPath", m.TargetProjectPath );
+        Add( "DefaultTypeScriptVersion", m.DefaultTypeScriptVersion );
+        Add( "IntegrationMode", m.IntegrationMode?.ToString() );
+        Add( "InstallYarn", m.InstallYarn?.ToString() );
+        Add( "GitIgnoreCKGenFolder", m.GitIgnoreCKGenFolder?.ToString() );
+        Add( "AutoInstallJest", m.AutoInstallJest?.ToString() );
+        Add( "EnableTSProjectReferences", m.EnableTSProjectReferences?.ToString() );
+        Add( "DefaultCulture", m.DefaultCulture );
+        Add( "ActiveCultures", m.ActiveCultures != null ? string.Join( ',', m.ActiveCultures ) : null );
+        Add( "TypeFilterName", m.TypeFilterName );
+        if( m.Barrels != null )
+        {
+            x.Add( new XElement( "Barrels", m.Barrels.Select( b => new XElement( "Barrel", new XAttribute( EngineConfiguration.xPath, b ) ) ) ) );
+        }
+        if( m.Types != null && m.Types.Count > 0 )
+        {
+            x.Add( new XElement( EngineConfiguration.xTypes,
+                                 m.Types.Select( t => new XElement( EngineConfiguration.xType,
+                                                                    new XAttribute( EngineConfiguration.xName, t.Name ),
+                                                                    Attr( "TypeName", t.TypeName ),
+                                                                    Attr( "Folder", t.Folder ),
+                                                                    Attr( "FileName", t.FileName ),
+                                                                    Attr( "SameFileAs", t.SameFileAs ),
+                                                                    Attr( "SameFolderAs", t.SameFolderAs ) ) ) ) );
+        }
         bool success = true;
-        if( framework.Value != null && !(bool.TryParse( framework.Value, out var declared ) && declared) )
-        {
-            monitor.Error( $"Invalid \"{framework.Path}\" = '{framework.Value}': a client feature is declared by true or by its section." );
-            return null;
-        }
-        foreach( var k in framework.GetChildren() )
-        {
-            if( !TypeScriptBinPathAspectConfiguration.ClientConfigurationKeys.Contains( k.Key ) )
-            {
-                monitor.Error( $"Unknown \"{k.Path}\": the keys of \"{FeatureName}\" are '{TypeScriptBinPathAspectConfiguration.ClientConfigurationKeys.Order().Concatenate( "', '" )}' (the type set of the client is in its \"Types\" and \"ExcludedTypes\")." );
-                success = false;
-                continue;
-            }
-            c.App.AddCompileKey( $"{c.RelativePath}:{FeatureName}:{k.Key}" );
-            switch( k.Key.ToLowerInvariant() )
-            {
-                case "barrels":
-                    x.Add( new XElement( "Barrels", k.GetChildren().Select( b => new XElement( "Barrel", new XAttribute( EngineConfiguration.xPath, b.Value ?? b["Path"] ?? "" ) ) ) ) );
-                    break;
-                case "activecultures":
-                    // A comma separated string or an array.
-                    x.Add( new XAttribute( "ActiveCultures", k.Value ?? string.Join( ',', k.GetChildren().Select( v => v.Value ) ) ) );
-                    break;
-                default:
-                    if( k.Value == null )
-                    {
-                        monitor.Error( $"\"{k.Path}\" must be a value." );
-                        success = false;
-                        continue;
-                    }
-                    x.Add( new XAttribute( k.Key, k.Value ) );
-                    break;
-            }
-        }
-        // The run time needs the feature (its build output): its emptied section is written true.
-        c.App.AddDeclarationKey( $"{c.RelativePath}:{FeatureName}" );
-        // The type set of the client (its Types and ExcludedTypes, the AppIdentity contributor made them compile keys) is
-        // read by the TypeScript engine from the computed set (the types drive). Only the entries that configure the
-        // TypeScript of a type (an object with other keys than its "Name") are given to the aspect: they override it.
-        if( c.Configuration.TryGetSection( "Types" ) is { Value: null } types )
-        {
-            var configured = types.GetChildren().Where( t => t.Value == null && t.GetChildren().Any( a => a.Key != "Name" ) ).ToList();
-            if( configured.Count > 0 ) x.Add( new XElement( EngineConfiguration.xTypes, configured.Select( ToTypeXml ) ) );
-        }
-        // The hosting: its compile time keys.
-        if( !c.Features.TryGetValue( HostingFeatureName, out var hosting ) )
-        {
-            monitor.Error( $"The {c} has no \"{HostingFeatureName}\": a {FeatureName} client that its party doesn't serve is not supported yet." );
-            return null;
-        }
-        c.App.AddDeclarationKey( $"{c.RelativePath}:{HostingFeatureName}" );
-        var requestPath = hosting["RequestPath"];
+        var requestPath = m.RequestPath;
         if( requestPath != null )
         {
             if( !requestPath.StartsWith( '/' ) )
             {
-                monitor.Error( $"Invalid \"{hosting.Path}:RequestPath\": '{requestPath}' must start with a '/'." );
+                monitor.Error( $"Invalid \"{c.Configuration.Path}:{FeatureName}:RequestPath\": '{requestPath}' must start with a '/'." );
                 success = false;
             }
             else
             {
                 x.Add( new XAttribute( "RequestPath", requestPath ) );
             }
-            c.App.AddCompileKey( $"{c.RelativePath}:{HostingFeatureName}:RequestPath" );
         }
         else
         {
@@ -176,19 +152,14 @@ public abstract class TypeScriptFrameworkAppBuilderContributor : IAppBuilderCont
             monitor.Error( $"The clients '{requestPaths[effectivePath]}' and '{c.Name}' of {c.App} have the same request path '{effectivePath}'." );
             success = false;
         }
-        var port = hosting["DevServerPort"];
-        if( port != null )
-        {
-            x.Add( new XAttribute( "DevServerPort", port ) );
-            c.App.AddCompileKey( $"{c.RelativePath}:{HostingFeatureName}:DevServerPort" );
-        }
+        if( m.DevServerPort is int port ) x.Add( new XAttribute( "DevServerPort", port ) );
         return success ? x : null;
 
-        // A type is its assembly qualified name, or an object whose keys are its attributes ({ "Name": "...", "Optional": true }).
-        static XElement ToTypeXml( ImmutableConfigurationSection t )
+        void Add( string name, string? value )
         {
-            if( t.Value != null ) return new XElement( EngineConfiguration.xType, t.Value );
-            return new XElement( EngineConfiguration.xType, t.GetChildren().Where( a => a.Value != null ).Select( a => new XAttribute( a.Key, a.Value! ) ) );
+            if( value != null ) x.Add( new XAttribute( name, value ) );
         }
+
+        static XAttribute? Attr( string name, string? value ) => value != null ? new XAttribute( name, value ) : null;
     }
 }

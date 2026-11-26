@@ -21,19 +21,6 @@ public sealed class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspect
     string? _requestPath;
 
     /// <summary>
-    /// The keys of the section of the TypeScript framework feature of a client declared by its party
-    /// ("CK-AppIdentity:Local:PartyClient:{Name}:NgApp"): they configure this aspect (the client name is the
-    /// <see cref="Name"/>, the "Types" and "ExcludedTypes" of the client are its type set). They are compile time keys:
-    /// the projection of the host's configuration doesn't contain them (unless the App keeps them). The scalar keys are the
-    /// attributes of this configuration, "Barrels" a list.
-    /// </summary>
-    public static readonly IReadOnlySet<string> ClientConfigurationKeys = new HashSet<string>( StringComparer.OrdinalIgnoreCase )
-    {
-        "TargetProjectPath", "DefaultTypeScriptVersion", "IntegrationMode", "InstallYarn", "GitIgnoreCKGenFolder",
-        "AutoInstallJest", "EnableTSProjectReferences", "DefaultCulture", "ActiveCultures", "TypeFilterName", "Barrels"
-    };
-
-    /// <summary>
     /// Initializes a new empty configuration.
     /// </summary>
     public TypeScriptBinPathAspectConfiguration()
