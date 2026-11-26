@@ -85,6 +85,13 @@ public sealed class TypeScriptClientCompileConfiguration : IConfigurationModel
     /// settings only configure their TypeScript).
     /// </summary>
     public IReadOnlyList<TypeScriptTypeCompileConfiguration>? Types { get; init; }
+
+    /// <inheritdoc />
+    public void Validate( IConfigurationValidationContext context )
+    {
+        if( RequestPath != null && !RequestPath.StartsWith( '/' ) ) context.Error( $"'{context.Path}:RequestPath' is '{RequestPath}': it must start with a '/'." );
+        if( DevServerPort is <= 0 or > 65535 ) context.Error( $"'{context.Path}:DevServerPort' is {DevServerPort}: a port is expected." );
+    }
 }
 
 /// <summary>
@@ -92,7 +99,7 @@ public sealed class TypeScriptClientCompileConfiguration : IConfigurationModel
 /// The same settings as the ones of <see cref="CK.TypeScript.TypeScriptTypeAttribute"/>.
 /// </summary>
 [ConfigurationModel]
-public sealed class TypeScriptTypeCompileConfiguration : IConfigurationModel
+public sealed class TypeScriptTypeCompileConfiguration
 {
     /// <summary>
     /// Gets the assembly qualified name of the type, or a pattern of type names.

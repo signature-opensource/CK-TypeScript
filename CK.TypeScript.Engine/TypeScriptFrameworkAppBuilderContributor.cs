@@ -130,17 +130,10 @@ public abstract class TypeScriptFrameworkAppBuilderContributor : IAppBuilderCont
         }
         bool success = true;
         var requestPath = m.RequestPath;
+        // The model checks that it starts with a '/'.
         if( requestPath != null )
         {
-            if( !requestPath.StartsWith( '/' ) )
-            {
-                monitor.Error( $"Invalid \"{c.Configuration.Path}:{FeatureName}:RequestPath\": '{requestPath}' must start with a '/'." );
-                success = false;
-            }
-            else
-            {
-                x.Add( new XAttribute( "RequestPath", requestPath ) );
-            }
+            x.Add( new XAttribute( "RequestPath", requestPath ) );
         }
         else
         {
