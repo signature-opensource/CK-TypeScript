@@ -42,25 +42,26 @@ specializes [`TypeScriptFrameworkAppBuilderContributor`](TypeScriptFrameworkAppB
 name (it requires the `AppIdentityAppBuilderContributor` of CK.AppIdentity.Engine):
 
 - a client that has the feature is a `TypeScriptBinPathAspectConfiguration` of its App: its name is the client name;
-  the keys of the feature section are the `TypeScriptBinPathAspectConfiguration.ClientConfigurationKeys` (the attributes
-  of a `<TypeScript>` element: `ActiveCultures`, `IntegrationMode`, `TargetProjectPath`...; `Barrels` is a list); the
-  `Types` and `ExcludedTypes` of the client (its type set) are its types (a type being its assembly qualified name or an
-  object whose keys are its attributes); any other key is an error;
-- its `"Hosting"` feature (served by its party) gives its `RequestPath` (optional: `/{kebab-name}` by default, `/` for the
-  default client) and its `DevServerPort`; a client without `"Hosting"` is not supported yet, and two clients at the same
-  request path are an error;
+- the feature declares its compile time model (`[CompileConfiguration<TModel>]`, the model being or deriving from
+  [`TypeScriptClientCompileConfiguration`](../CK.TypeScript/Configuration/TypeScriptClientCompileConfiguration.cs)):
+  `TargetProjectPath`, `IntegrationMode`, `ActiveCultures`, `Barrels`..., the `RequestPath` (optional: `/{kebab-name}`
+  by default, `/` for the default client) and the `DevServerPort` of the client, and the TypeScript settings of its
+  types (`Types`: `{ "Name", "TypeName", "Folder", "FileName", "SameFileAs", "SameFolderAs" }`). The App builder reads
+  it (an unknown key is an error) and the contributor receives it
+  (`AppIdentityAppBuilderContributor.DeclaredClient.GetCompileModel`): it never reads the section;
+- the `Types` and `ExcludedTypes` of the client are its type set (type names);
+- two clients at the same request path are an error;
 - the client is handled (`DeclaredClient.SetHandled( featureName )`): a client has one build feature;
 - the presence of a client gives the `TypeScriptAspectConfiguration`;
-- these keys are compile time keys: they are not projected in the host's `appsettings.json`. The other keys of
-  `"Hosting"` (`UseDist`, its options like `StaticFiles`) are the run time's. The feature and `"Hosting"` stay declared
-  (written `true` when they are emptied, `AppConfiguration.AddDeclarationKey`).
+- the keys of the model are compile time keys: they are not projected in the host's `appsettings.json`, the feature
+  stays declared (written `true` when it is emptied, `AppConfiguration.AddDeclarationKey`).
 
 ```jsonc
 "PartyClient": {
-  "App":     { "NgApp": true, "Hosting": { "RequestPath": "/", "DevServerPort": 4200 } },
+  "App":     { "NgApp": { "RequestPath": "/", "DevServerPort": 4200 }, "Hosting": true },
   "MiniApp": { "Types": [ "CK.Ng.Cris.AspNet.CrisAspNetPackage, CK.Ng.Cris.AspNet" ],
-               "NgApp": { "ActiveCultures": [ "en", "fr" ] },
-               "Hosting": { "DevServerPort": 4201 } }
+               "NgApp": { "ActiveCultures": [ "en", "fr" ], "DevServerPort": 4201 },
+               "Hosting": true }
 }
 ```
 
